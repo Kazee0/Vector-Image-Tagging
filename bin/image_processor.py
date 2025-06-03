@@ -58,8 +58,7 @@ class ImageProcessor:
             return QPixmap.fromImage(processed)
         except Exception as e:
             print("Error")
-            
-    
+     
     def _grayscale_log(self, img, width, height):
         ptr = img.bits()
         ptr.setsize(img.sizeInBytes())
@@ -71,6 +70,7 @@ class ImageProcessor:
         
         processed = QImage(result.date, width, height, img.bytesPerLine(), QImage.Format.Format_Grayscale8)
         return QPixmap.fromImage(processed)
+    
     def apply_banpass_filter(self, pixmap, params):
         qimage = pixmap.toImage()
         qimage = qimage.convertToFormat(QImage.Format.Format_Grayscale8)
@@ -112,6 +112,53 @@ class ImageProcessor:
         img_filtered=img_filtered.astype(np.uint8)
         processed = QImage(img_filtered.data, cols, rows, cols, QImage.Format.Format_Grayscale8)
         return QPixmap.fromImage(processed)
+
+    def adjust_contrast(self, pixmap, params):
+        qimage = pixmap.toImage()
         
+        ptr = qimage.bits()
+        ptr.setsize(qimage.sizeInBytes())
+
+        if qimage.format() == QImage.Format.Format_Grayscale8:
+            arr = np.frombuffer(ptr, np.uint8).reshape((qimage.height(), qimage.width()))
+            channels = 1
+        else:
+            arr = np.frombuffer(ptr, np.uint8).reshape((qimage.height(), qimage.width(), 4))
+            channels =3
+        if params['auto']:
+            if channels == 1:
+                arr = self._auto_contrast_mono(arr)
+            else:
+                for c in range(channels):
+                    arr[:,:,c]  = self._auto_contrast_mono(arr[:,:,c])
+        else:
+            brightness = params['brightness']
+            contrast = params['contrast']
+            if channels == 1:
+                arr = self._manual_contrast_mono(arr, brightness, contrast)
+            else:
+                for c in range(channels):
+                    arr[:,:,c] = self._manual_contrast_mono(arr[:,:,c], brightness, contrast)
+        
+        if channels == 1:
+            processd = QImage(arr.data, qimage.width(), qimage.height(), qimage.bytesPerLine(), QImage.Format.Format_Grayscale8)
+        else:
+            processd = QImage(arr.data, qimage.width(), qimage.height(), qimage.bytesPerLine(), QImage.Format.Format_RGBA8888)
+        
+        return QPixmap.fromImage(processd)
+    
+    def _auto_contrast_mono(self, arr):
+        min_val = np.min(arr)
+        max_val = np.max(arr) 
+        if max_val > min_val:
+            return((arr-min_val)*(255.0/(max_val-min_val))).astype(np.uint8)
+        return arr
+    
+    def _manual_contrast_mono(self, arr, b, c):
+        arr = arr.astype(np.float32)
+        arr = (arr-128)*c + 128
+        arr = arr * b
+        return np.clip(arr, 0, 255).astype(np.uint8)    
+            
     def reset_image(self):
         return self.original_pixmap.copy() if self.original_pixmap else None

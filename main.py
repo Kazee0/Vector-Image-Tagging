@@ -4,7 +4,7 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeySequence, QShortcut
 from PyQt6.QtCore import Qt
 import cv2
 import numpy as np
-import image_processor
+import bin.image_processor as image_processor
 from interfaces import BandpassFilterDialog, ContrastDialog
 
 class TIFFViewer(QMainWindow):
