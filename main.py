@@ -63,6 +63,9 @@ class TIFFViewer(QMainWindow):
         about_action = helps_menu.addAction("About")
         about_action.triggered.connect(self.show_about)
         
+        contrast_dialog = tool_menu.addAction("Contrast...")
+        contrast_dialog.triggered.connect(self.adjust_contrast)
+        
         #Hot Keys
         save_shortcut = QShortcut(QKeySequence("Ctrl+S"),self)
         save_shortcut.activated.connect(self.save_action)
@@ -84,7 +87,44 @@ class TIFFViewer(QMainWindow):
         self.view.mousePressEvent = self.mousePressEvent
         self.view.mouseMoveEvent = self.mouseMoveEvent 
         self.view.mouseReleaseEvent = self.mouseReleaseEvent
-    
+        
+    def adjust_contrast(self):
+        if not self.scene.items():
+            QMessageBox.warning(self, "Warning","No existing Image")
+            return
+        
+        dialog = ContrastDialog()
+        dialog.show()
+        orginal_img = self.scene.items()[0].pixmap()
+        dialog.brightness_slider.valueChanged.connect(
+            lambda: self.preview_contrast(orginal_img,dialog.get_value())
+        )
+        dialog.contrast_slider.valueChanged.connect(
+            lambda: self.preview_contrast(orginal_img,dialog.get_value())
+        )
+        dialog.auto_contrast.toggled.connect(
+            lambda: self.preview_contrast(orginal_img, dialog.get_value())
+        )
+        
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            params = dialog.get_value()
+            self.apply_contrast(orginal_img, params)
+        else:
+            self.scene.clear()
+            self.scene.addPixmap(orginal_img)
+        
+            
+            
+    def preview_contrast(self, img, params): 
+        processed = self.image_processor.adjust_contrast(img, params)
+        self.scene.clear()
+        self.scene.addPixmap(processed)
+        
+    def apply_contrast(self, img, params):
+        processed = self.image_processor.adjust_contrast(img, params)
+        self.scene.clear()
+        self.scene.addPixmap(processed)
+        
     def apply_banpass_filter(self):
         if not self.scene.items():
             QMessageBox.warning(self,"Warning", "No present image")
@@ -97,6 +137,7 @@ class TIFFViewer(QMainWindow):
             self.scene.clear()
             self.scene.addPixmap(processed)
             #Diplay Filter Not Implmented
+            
     def toggle_move(self, checked):
         self.move_mode = checked
         if self.move_mode:
