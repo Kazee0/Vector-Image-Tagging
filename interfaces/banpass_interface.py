@@ -1,6 +1,5 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QCheckBox, QPushButton, QGroupBox, QWidget
-from PyQt6.QtWidgets import QMainWindow, QApplication
 
 class BandpassFilterDialog(QDialog):
     def __init__(self, parent=None):

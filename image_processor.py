@@ -113,8 +113,5 @@ class ImageProcessor:
         processed = QImage(img_filtered.data, cols, rows, cols, QImage.Format.Format_Grayscale8)
         return QPixmap.fromImage(processed)
         
-             
-        
-        
     def reset_image(self):
         return self.original_pixmap.copy() if self.original_pixmap else None

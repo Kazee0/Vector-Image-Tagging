@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt
 import cv2
 import numpy as np
 import image_processor
-from banpass_interface import BandpassFilterDialog
+from interfaces import BandpassFilterDialog, ContrastDialog
 
 class TIFFViewer(QMainWindow):
     def __init__(self):
