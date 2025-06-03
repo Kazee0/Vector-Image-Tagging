@@ -78,23 +78,31 @@ class ImageProcessor:
         ptr=qimage.bits()
         ptr.setsize(qimage.sizeInBytes())
         arr = np.frombuffer(ptr, np.uint8).reshape((qimage.height(), qimage.width()))
-        
-        fft = np.fft.fft2(arr)
+        blurred = cv2.GaussianBlur(arr, (5, 5), 0)
+        img_filtered = cv2.addWeighted(arr, 1.5, blurred, -0.5, 0)
+        fft = np.fft.fft2(arr.astype(np.float32))
         fft_shift = np.fft.fftshift(fft)
         
         rows, cols = arr.shape
         crow,ccol = rows//2, cols//2
-        
+        """
         mask = np.ones((rows, cols), np.float32)
         
         if params['large_cutoff']>0:
-            radius = params['large_cutoff']
-            cv2.circle(mask, (ccol, crow), int(radius),0,-1)
+            radius = min(params['large_cutoff'], min(rows, cols)//2)
+            y,x = np.ogrid[:rows, :cols]
+            mask_area = (x-ccol)**2 + (y-crow)**2 <= radius **2
+            mask[mask_area] = 0
             
         if params['small_cutoff']>0:
-            radius = params['small_cutoff']
-            cv2.circle(mask, (ccol, crow), int(radius),1,-1)
-            mask = 1-mask
+            radius = min(params['small_cutoff'], min(rows, cols)//2)
+            y,x = np.ogrid[:rows, :cols]
+            mask_area = (x -ccol)**2+(y-crow) ** 2<= radius ** 2
+            mask[mask_area] = 0
+            
+                # Add debug logging
+        print(f"Bandpass filter: large={params['large_cutoff']}, small={params['small_cutoff']}")
+        print(f"FFT min: {np.min(np.abs(fft_shift))}, max: {np.max(np.abs(fft_shift))}")
         
         fft_filtered = fft_shift*mask
         
@@ -108,7 +116,7 @@ class ImageProcessor:
             if max_val>min_val:
                 img_filtered = 255*(img_filtered-min_val)/(max_val-min_val)
                 if params['saturate']:
-                    img_filtered = np.clip(img_filtered,0,255)
+                    img_filtered = np.clip(img_filtered,0,255)"""
         img_filtered=img_filtered.astype(np.uint8)
         processed = QImage(img_filtered.data, cols, rows, cols, QImage.Format.Format_Grayscale8)
         return QPixmap.fromImage(processed)
@@ -151,7 +159,7 @@ class ImageProcessor:
         min_val = np.min(arr)
         max_val = np.max(arr) 
         if max_val > min_val:
-            return((arr-min_val)*(255.0/(max_val-min_val))).astype(np.uint8)
+            return np.clip((arr-min_val)/(max_val-min_val)*255, 0, 255).astype(np.uint8)
         return arr
     
     def _manual_contrast_mono(self, arr, b, c):

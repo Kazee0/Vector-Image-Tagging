@@ -124,6 +124,7 @@ class TIFFViewer(QMainWindow):
         processed = self.image_processor.adjust_contrast(img, params)
         self.scene.clear()
         self.scene.addPixmap(processed)
+
         
     def apply_banpass_filter(self):
         if not self.scene.items():
